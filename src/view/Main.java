@@ -110,7 +110,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 		currentFont = txaDisplay.getFont();
 		
 		statusBarLabels = new JLabel[6];
-		String[] texts = {"第0行", "第0列", "光标:0", "行数:1", "字数:0", "utf-8"};
+		String[] texts = {"第0行", "第0列", "光标:0", "行数:1", "字数:0", "UTF-8"};
 		statusBar = new JToolBar();
 		statusBar.add(new JPanel(new SpringLayout()));
 		for(int i=0; i< statusBarLabels.length; ++i) {

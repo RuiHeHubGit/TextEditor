@@ -19,12 +19,21 @@ import java.util.List;
 
 import javax.swing.JFrame;
 
+import org.omg.CORBA.OMGVMCID;
+
 import info.monitorenter.cpdetector.io.ASCIIDetector;
 import info.monitorenter.cpdetector.io.CodepageDetectorProxy;
 import info.monitorenter.cpdetector.io.ParsingDetector;
 import info.monitorenter.cpdetector.io.UnicodeDetector;
 
 public class Model {
+	static byte[] ANSI_ASICC = {(byte) 0xA1, (byte) 0xC, 0x30};
+	static byte[] UNICODE = {(byte) 0xE4, (byte) 0xB8, (byte) 0xA5};
+	static byte[] UTF_8 = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
+	static byte[] UTF_16_LE= {(byte) 0xFF,(byte) 0xFE};
+	static byte[] UTF_16_BE = {(byte) 0xFE,(byte) 0xFF};
+	static byte[][] BOMS = {UNICODE, UTF_8, UTF_16_LE, UTF_16_BE};
+	
 	private ConversionStateChangeListener conversionStateChangeListener;
 	private ReadFileActionListener readFileActionListener;
 	private ConvertorData convertorData;
@@ -37,7 +46,7 @@ public class Model {
 	private String docOpenPath;
 	private String docSavePath;
 	private String docCharsetName;
-	private byte[] docFileHead;
+	private byte[] docFileBom;
 	private String lineSeparator;
 	private boolean docModifyed;
 	
@@ -216,7 +225,7 @@ public class Model {
 			}
 		}
  
-		String charsetName = "";
+		String charsetName = "GBK";
 		if (charset != null) {
 			if (charset.name().equals("US-ASCII")) {
 				charsetName = "ISO_8859_1";
@@ -227,47 +236,38 @@ public class Model {
 		return charsetName;
 	}
 	
-	/**
-	 * 获取文件编码
-	 * @param fileName
-	 * @return
-	 * @throws Exception
-	 */
-	@Deprecated
-	public static String codeString(String fileName) {
-		String code = null;
-		BufferedInputStream bin = null;
+	private byte[] getBOM(String filePath) throws IOException {
+		
+		File file = new File(filePath);
+		InputStream is = null;
 		try {
-			bin = new BufferedInputStream(new FileInputStream(fileName));
-			int p = (bin.read() << 8) + bin.read();
-			code = null;
-			switch (p) {
-				case 0xefbb:
-					code = "UTF-8";
-					break;
-				case 0xfffe:
-					code = "Unicode";
-					break;
-				case 0xfeff:
-					code = "UTF-16";
-					break;
-				default:
-					code = "GBK";
+			byte[] buf = new byte[5];
+			is = new BufferedInputStream(new FileInputStream(filePath));
+			is.read(buf);
+			int len = buf.length;
+			if(len >= 3) {
+				for(int i=0; i<BOMS.length; ++i) {
+					int blen = 0;
+					for(int j=0; j<BOMS[i].length; ++j) {
+						if(BOMS[i][j] == buf[j]) {
+							++blen;
+						} else {
+							break;
+						}
+					}
+					if(blen == BOMS[i].length) {
+						return BOMS[i];
+					}
+				}
 			}
-			bin.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+		}catch(Exception e) {
+			
 		} finally {
-			code = "UTF-8";
-			if(bin != null) {
-				try {
-					bin.close();
-				} catch (IOException e) {}
+			if(is != null) {
+				is.close();
 			}
 		}
-		return code;
+		return null;
 	}
 	
 	public static boolean fileIsExists(File file) {
@@ -301,23 +301,18 @@ public class Model {
 			
 			@Override
 			public void run() {
-				FileInputStream inputStream = null;
 				BufferedReader reader = null;
 				try {
 					docCharsetName = getFileCharset(file.getAbsolutePath());
-					inputStream = new FileInputStream(file);
-					
-					docFileHead = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF}; //utf-8
-			        if(docCharsetName.length() == 0) {
-			        	docCharsetName = "UTF-8";
-					}else {
-						inputStream.read(docFileHead);
-					}
-			        
+					docFileBom = getBOM(file.getAbsolutePath());
 			        if(readFileActionListener != null) {
 						readFileActionListener.onOpen(file.getName(), docCharsetName);
 					}
 			        
+			        FileInputStream inputStream = new FileInputStream(file);
+			        if(docFileBom != null) {
+			        	inputStream.read(docFileBom);
+			        }
 					reader = new BufferedReader(
 							new InputStreamReader(inputStream, docCharsetName));
 					int lineCount = 0;
@@ -341,9 +336,6 @@ public class Model {
 					try {
 						if(reader != null) {
 							reader.close();
-						}
-						if(inputStream != null) {
-							inputStream.close();
 						}
 					} catch (IOException e) {
 						if(readFileActionListener != null) {
@@ -374,14 +366,10 @@ public class Model {
 		}
 		BufferedWriter writer = null;
 		try {
-			if(docCharsetName == null) {
-				docCharsetName = "utf-8";
-				docFileHead = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF}; //utf-8
-			}
-			
 			FileOutputStream fout = new FileOutputStream(outFile);
-			fout.write(docFileHead); //写入编码标识文件头
-			
+			if(docFileBom != null) {
+				fout.write(docFileBom); //写入编码标识文件头
+			}
 			writer = new BufferedWriter(new OutputStreamWriter(fout,  docCharsetName));
 			for(String line : docLines) {
 				writer.write(line);
@@ -420,11 +408,13 @@ public class Model {
 		try {
 			if(docCharsetName == null) {
 				docCharsetName = "utf-8";
-				docFileHead = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF}; //utf-8
+				docFileBom = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF}; //utf-8
 			}
 			
 			FileOutputStream fout = new FileOutputStream(outFile);
-			fout.write(docFileHead); //写入编码标识文件头
+			if(docFileBom != null) {
+				fout.write(docFileBom); //写入编码标识文件头
+			}
 			
 			writer = new BufferedWriter(new OutputStreamWriter(fout,  docCharsetName));
 			writer.write(text);
@@ -443,7 +433,7 @@ public class Model {
 	public void initNewDoc() {
 		lineSeparator = System.lineSeparator();
 		docCharsetName = "utf-8";
-		docFileHead = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF}; //utf-8
+		docFileBom = null;
 		docModifyed = false;
 	}
 
