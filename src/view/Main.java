@@ -182,6 +182,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 					} else if(code == 3){
 						return;
 					}
+					model.initNewDoc();
 					Main.this.openDoc();
 				}
 			});
