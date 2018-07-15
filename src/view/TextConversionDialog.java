@@ -229,9 +229,9 @@ public class TextConversionDialog extends JDialog implements ActionListener{
 			@Override
 			public boolean accept(File f) {
 				return f.isDirectory()
-						|| f.getName().endsWith(".java")
-						|| f.getName().endsWith(".class")
-						|| f.getName().endsWith(".jar");
+						|| f.getName().toLowerCase().endsWith(".java")
+						|| f.getName().toLowerCase().endsWith(".class")
+						|| f.getName().toLowerCase().endsWith(".jar");
 			}
 		});
 		

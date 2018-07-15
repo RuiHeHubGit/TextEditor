@@ -5,10 +5,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
@@ -34,9 +36,14 @@ public class Model {
 	
 	private String docOpenPath;
 	private String docSavePath;
+	private String docCharsetName;
+	private byte[] docFileHead;
+	private String lineSeparator;
+	private boolean docModifyed;
 	
 	public Model() {
 		docLines = new ArrayList<>();
+		initNewDoc();
 	}
 	
 	public void start(Class<?> converter, String inPath, String outPath, JFrame parent) throws Exception{
@@ -209,7 +216,7 @@ public class Model {
 			}
 		}
  
-		String charsetName = "GBK";
+		String charsetName = "";
 		if (charset != null) {
 			if (charset.name().equals("US-ASCII")) {
 				charsetName = "ISO_8859_1";
@@ -262,9 +269,16 @@ public class Model {
 		}
 		return code;
 	}
+	
+	public static boolean fileIsExists(File file) {
+		if(file == null || !file.exists() || !file.isFile()) {
+			return false;
+		}
+		return true;
+	}
 
 	public void readFile(File file, ReadFileActionListener listener){
-		if(file == null || !file.isFile()) {
+		if(fileIsExists(file)) {
 			Exception e = new IllegalArgumentException("无效的文件");
 			if(readFileActionListener != null) {
 				readFileActionListener.onError(e);
@@ -290,9 +304,22 @@ public class Model {
 				FileInputStream inputStream = null;
 				BufferedReader reader = null;
 				try {
+					docCharsetName = getFileCharset(file.getAbsolutePath());
 					inputStream = new FileInputStream(file);
+					
+					docFileHead = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF}; //utf-8
+			        if(docCharsetName.length() == 0) {
+			        	docCharsetName = "UTF-8";
+					}else {
+						inputStream.read(docFileHead);
+					}
+			        
+			        if(readFileActionListener != null) {
+						readFileActionListener.onOpen(file.getName(), docCharsetName);
+					}
+			        
 					reader = new BufferedReader(
-							new InputStreamReader(inputStream, getFileCharset(file.getAbsolutePath())));
+							new InputStreamReader(inputStream, docCharsetName));
 					int lineCount = 0;
 					int words = 0;
 					String line;
@@ -301,7 +328,7 @@ public class Model {
 						words += line.length();
 						++lineCount;
 						if(readFileActionListener != null) {
-							readFileActionListener.onNewLine(line, System.lineSeparator(), lineCount, words);
+							readFileActionListener.onNewLine(line, lineSeparator, lineCount, words);
 						}
 					}
 				} catch (Exception e) {
@@ -339,7 +366,7 @@ public class Model {
 			outFile = new File(docSavePath);
 		}
 				
-		if(!outFile.exists()) {
+		if(!fileIsExists(outFile)) {
 			outFile.createNewFile();
 			if(!outFile.exists()) {
 				throw new Exception("保存失败");
@@ -347,11 +374,20 @@ public class Model {
 		}
 		BufferedWriter writer = null;
 		try {
-			writer = new BufferedWriter(new FileWriter(outFile));
+			if(docCharsetName == null) {
+				docCharsetName = "utf-8";
+				docFileHead = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF}; //utf-8
+			}
+			
+			FileOutputStream fout = new FileOutputStream(outFile);
+			fout.write(docFileHead); //写入编码标识文件头
+			
+			writer = new BufferedWriter(new OutputStreamWriter(fout,  docCharsetName));
 			for(String line : docLines) {
 				writer.write(line);
-				writer.newLine();
+				writer.write(lineSeparator);
 			}
+			docModifyed = false;
 		} catch (Exception e) {
 			throw new IOException("保存失败");
 		} finally {
@@ -382,8 +418,18 @@ public class Model {
 		}
 		BufferedWriter writer = null;
 		try {
-			writer = new BufferedWriter(new FileWriter(outFile));
+			if(docCharsetName == null) {
+				docCharsetName = "utf-8";
+				docFileHead = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF}; //utf-8
+			}
+			
+			FileOutputStream fout = new FileOutputStream(outFile);
+			fout.write(docFileHead); //写入编码标识文件头
+			
+			writer = new BufferedWriter(new OutputStreamWriter(fout,  docCharsetName));
 			writer.write(text);
+			
+			docModifyed = false;
 		} catch (Exception e) {
 			throw new IOException("保存失败");
 		} finally {
@@ -392,6 +438,13 @@ public class Model {
 			}
 		}
 		
+	}
+	
+	public void initNewDoc() {
+		lineSeparator = System.lineSeparator();
+		docCharsetName = "utf-8";
+		docFileHead = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF}; //utf-8
+		docModifyed = false;
 	}
 
 	public ConversionStateChangeListener getConversionStateChangeListener() {
@@ -443,5 +496,18 @@ public class Model {
 	public String getDocOpenPath() {
 		return docOpenPath;
 	}
+
+	public String getDocCharsetName() {
+		return docCharsetName;
+	}
+
+	public boolean isDocModifyed() {
+		return docModifyed;
+	}
+
+	public void setDocModifyed(boolean docModifyed) {
+		this.docModifyed = docModifyed;
+	}
+
 	
 }

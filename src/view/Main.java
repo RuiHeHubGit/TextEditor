@@ -39,7 +39,6 @@ import model.Configuration;
 import model.ConversionStateChangeListener;
 import model.Model;
 import model.ReadFileActionListener;
-import test.TestConverter;
 import util.ActionUtil;
 import util.MenuTree;
 
@@ -52,7 +51,6 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 	private Configuration configuration;
 	private Font currentFont;
 	private int lastLength;
-	private boolean modifyed;
 	private Model model;
 
 	public Main(String[] args) {
@@ -76,7 +74,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 
 	private void initMainWindwos() {
 		setTitle("记事本");
-		setIconImage(new ImageIcon("resources/icon/notepad.png").getImage());
+		setIconImage(new ImageIcon(Main.class.getResource("notepad.png")).getImage());
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 		setSize((int) (dim.getWidth() * 0.6), (int) (dim.getHeight() * 0.6));
 		setLocationRelativeTo(null);
@@ -111,8 +109,8 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 		
 		currentFont = txaDisplay.getFont();
 		
-		statusBarLabels = new JLabel[5];
-		String[] texts = {"第0行", "第0列", "光标:0", "行数:1", "字数:0"};
+		statusBarLabels = new JLabel[6];
+		String[] texts = {"第0行", "第0列", "光标:0", "行数:1", "字数:0", "utf-8"};
 		statusBar = new JToolBar();
 		statusBar.add(new JPanel(new SpringLayout()));
 		for(int i=0; i< statusBarLabels.length; ++i) {
@@ -152,7 +150,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 
 	@ActionHandle("新建")
 	public void newDoc() {
-		if(modifyed) {
+		if(model.isDocModifyed()) {
 			QuitConfimDialog.show(this, new QuitConfimDialog.OperationDoneListener() {
 				
 				@Override
@@ -162,19 +160,19 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 					} else if(code == 3){
 						return;
 					}
-					Main.this.modifyed = false;
 					Main.this.newDoc();
 				}
 			});
 		} else {
 			txaDisplay.setText("");
 			model.clearAll();
+			model.initNewDoc();
 		}
 	}
 
 	@ActionHandle("打开")
 	public void openDoc() {
-		if(modifyed) {
+		if(model.isDocModifyed()) {
 			QuitConfimDialog.show(this, new QuitConfimDialog.OperationDoneListener() {
 				
 				@Override
@@ -184,7 +182,6 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 					} else if(code == 3){
 						return;
 					}
-					Main.this.modifyed = false;
 					Main.this.openDoc();
 				}
 			});
@@ -208,8 +205,14 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 			{
 				return;
 			}
-			model.setDocSavePath(jfc.getSelectedFile().getAbsolutePath());
-			this.setTitle("记事本 - "+ jfc.getSelectedFile().getName());
+			File saveFile = jfc.getSelectedFile();
+			if(Model.fileIsExists(saveFile) && JOptionPane.showConfirmDialog(this,
+					"文件已经存在是否覆盖？", "提示", JOptionPane.YES_NO_OPTION) != JOptionPane.OK_OPTION) {
+				return;
+			}
+			savePath = saveFile.getAbsolutePath();
+			model.setDocSavePath(savePath);
+			this.setTitle(saveFile.getName()+" - 记事本");
 		}
 		
 		try {
@@ -217,6 +220,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 			model.saveDoc(text, null);
 			lastLength = text.length();
 		} catch (Exception e) {
+			e.printStackTrace();
 			showExceptionMsgDialog(Main.this, "保存失败", e.getMessage(), "提示");
 		}
 	}
@@ -229,7 +233,11 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 			if(jfc.showDialog(new JLabel(), "另存") == JFileChooser.APPROVE_OPTION)
 			{
 				File saveFile=jfc.getSelectedFile();
-				model.saveDoc(saveFile);
+				if(Model.fileIsExists(saveFile) && JOptionPane.showConfirmDialog(this,
+						"文件已经存在是否覆盖？", "提示", JOptionPane.YES_NO_OPTION) != JOptionPane.OK_OPTION) {
+					return;
+				}
+				model.saveDoc(txaDisplay.getText(), saveFile);
 			}
 			
 		} catch (Exception e) {
@@ -239,7 +247,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 
 	@ActionHandle("退出")
 	public void preExit() {
-		if(modifyed) {
+		if(model.isDocModifyed()) {
 			QuitConfimDialog.show(this, new QuitConfimDialog.OperationDoneListener() {
 				
 				@Override
@@ -396,21 +404,22 @@ public class Main extends JFrame implements ActionListener, CaretListener{
             int length = txaDisplay.getText().length();
             if(length != lastLength) {
             	lastLength = length;
-            	modifyed = true;
+            	model.setDocModifyed(true);
             }
             
-            updateStateInfo(row, column, caretPos, rows, length);
+            updateStateInfo(row, column, caretPos, rows, length, null);
 		} catch (BadLocationException e1) {
 			e1.printStackTrace();
 		}
 	}
 	
-	private void updateStateInfo(int row, int column, int caretPos, int rows, int length) {
+	private void updateStateInfo(int row, int column, int caretPos, int rows, int length, String charSet) {
 		if(row >= 0)		statusBarLabels[0].setText("第"+row+"行");
 		if(column >= 0)		statusBarLabels[1].setText("第"+column+"列");
 		if(caretPos >= 0)	statusBarLabels[2].setText("光标:"+caretPos);
 		if(rows >= 0)		statusBarLabels[3].setText("行数:"+rows);
 		if(length >= 0)		statusBarLabels[4].setText("字数:"+length);
+		if(charSet != null)	statusBarLabels[5].setText(charSet);
 	}
 
 	public static void showExceptionMsgDialog(Component c, String msg, String cause, String title) {
@@ -422,17 +431,22 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 	
 	private void openDoc(File file) {
 		try {
-			this.setTitle("记事本 - "+ file.getName());
 			txaDisplay.setText("");
 			model.clearAll();
 			txaDisplay.setEditable(false);
 			model.readFile(file, new ReadFileActionListener() {
 				
 				@Override
+				public void onOpen(String fileName, String CharsetName) {
+					setTitle(fileName+" - 记事本");
+					updateStateInfo(-1, -1, -1, -1, -1, model.getDocCharsetName());
+				}
+				
+				@Override
 				public void onNewLine(String line, String br, int lineCount, int words) {
 					txaDisplay.append(line);
 					txaDisplay.append(br);
-					updateStateInfo(-1, -1, -1, lineCount, words);
+					updateStateInfo(-1, -1, -1, lineCount, words, null);
 				}
 				
 				@Override
@@ -443,7 +457,6 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 				public void onDeon(List<String> docLines) {
 					txaDisplay.setEditable(true);
 					lastLength = txaDisplay.getText().length();
-					modifyed = false;
 				}
 			});
 		} catch (Exception e) {
