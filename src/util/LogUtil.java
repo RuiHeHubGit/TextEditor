@@ -44,6 +44,7 @@ public class LogUtil {
 		try {
 			if(debug) {
 				System.err.println(firstLine);
+				System.err.println(text);
 			}
 			writer = new PrintWriter(new FileWriter(savePath, true));
 			writer.println(firstLine);
