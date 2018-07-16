@@ -29,9 +29,7 @@ public class HRClassLoader extends ClassLoader{
 			cLassBytes = Files.readAllBytes(path);
 			return defineClass(cLassBytes, 0, cLassBytes.length);
 		} catch (URISyntaxException e) {
-			e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		return null;
 	}
@@ -65,7 +63,6 @@ public class HRClassLoader extends ClassLoader{
 							out.close();
 						}
 					} catch (IOException e) {
-						e.printStackTrace();
 					}
                 }
             }

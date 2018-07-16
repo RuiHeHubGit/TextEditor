@@ -381,7 +381,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 				
 				try {
 					model.start(converter, inPath, outPath, Main.this);
-				} catch (Exception e) {
+				} catch (Throwable e) {
 					LogUtil.exception(e);
 					showExceptionMsgDialog(Main.this, "转化异常", e.getMessage(), "提示");
 				}

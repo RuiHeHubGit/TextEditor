@@ -1,1 +1,4 @@
-*.class
+/view/
+/model/
+/test/
+/util/

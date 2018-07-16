@@ -218,7 +218,6 @@ public class Model {
 			is = new BufferedInputStream(new FileInputStream(filePath));
 			charset = detector.detectCodepage(is, 8);
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw e;
 		} finally {
 			if(is != null) {
