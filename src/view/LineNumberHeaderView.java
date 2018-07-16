@@ -12,7 +12,11 @@ import java.awt.Rectangle;
  *
  */
 public class LineNumberHeaderView extends javax.swing.JComponent {
-    private final  Font DEFAULT_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 13);
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private final  Font DEFAULT_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 13);
     public final Color DEFAULT_BACKGROUD = new Color(228, 228, 228);
     public final Color DEFAULT_FOREGROUD = Color.BLACK;
     public final int nHEIGHT = Integer.MAX_VALUE - 1000000;

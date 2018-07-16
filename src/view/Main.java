@@ -40,9 +40,14 @@ import model.ConversionStateChangeListener;
 import model.Model;
 import model.ReadFileActionListener;
 import util.ActionUtil;
+import util.LogUtil;
 import util.MenuTree;
 
 public class Main extends JFrame implements ActionListener, CaretListener{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public final static int SHOW_MAX_LINES = 1000;
 	private HashMap<String, Method> actionHandleMap;
 	private TextAreaMenu txaDisplay;
@@ -54,15 +59,14 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 	private Model model;
 
 	public Main(String[] args) {
+		init();
 		initMainWindwos();
 		initThem();
 		initMainPanel();
-		initCongig();
 		initMenu();
 		actionHandleMap = new HashMap<String, Method>();
 		ActionUtil.scanRegisterActionHandle(this.getClass(), actionHandleMap);
 		setVisible(true);
-		
 		checkArgs(args);
 	}
 
@@ -88,14 +92,11 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 	}
 
 	/**
-	 * 加载配置并设置，暂时为完成@TODO 
+	 * 初始化
 	 */
-	private void initCongig() {
+	private void init() {
 		model = new Model();
 		configuration = Configuration.loadConfig();
-		txaDisplay.setLineWrap(configuration.isLineWrap());
-		txaDisplay.setWrapStyleWord(configuration.isWrapStyleWord());
-		statusBarLabels[0].getParent().setVisible(configuration.isShowStateBar());
 	}
 
 	private void initMainPanel() {
@@ -120,6 +121,10 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 		}
 		statusBar.addSeparator();
 		add(statusBar, BorderLayout.SOUTH);
+		
+		txaDisplay.setLineWrap(configuration.isLineWrap());
+		txaDisplay.setWrapStyleWord(configuration.isWrapStyleWord());
+		statusBarLabels[0].getParent().setVisible(configuration.isShowStateBar());
 	}
 
 	private void initMenu() {
@@ -133,7 +138,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 				new MenuTree( "文件", new String[]{"新建,N,CTRL", "打开,O,CTRL", "保存,S,CTRL", "另存", "退出,Q,CTRL"}),
 				new MenuTree( "编辑", new String[]{"查找,F,CTRL", "全选,A,CTRL", "复制,C,CTRL", "粘贴,V,CTRL", "剪切,X,CTRL"}),
 				new MenuTree( "格式", new String[]{"自动换行,L,CTRL,2," + configuration.isLineWrap(), "断行不断字,W,CTRL,2," + configuration.isWrapStyleWord(), "字体,T,CTRL"}),
-				new MenuTree( "工具", new String[]{"文本转化,E,CTRL", "插件,M,CTRL", "插件管理"}),
+				new MenuTree( "工具", new String[]{"文本转化,E,CTRL", "插件,M,CTRL"}),
 				new MenuTree( "查看", new String[]{"显示行号,L,ALT,2," + configuration.isShowLineNumber(), "显示状态栏,S,ALT,2," + configuration.isShowStateBar()}),
 				new MenuTree( "帮助", new String[]{"查看帮助,H,ALT", "关于记事本,A,ALT"})};
 				
@@ -145,6 +150,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception e) {
 			showExceptionMsgDialog(this, "设置主题失败", e.getMessage(), "提示");
+			LogUtil.exception(e);
 		}
 	}
 
@@ -242,6 +248,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 			}
 			
 		} catch (Exception e) {
+			LogUtil.exception(e);
 			JOptionPane.showConfirmDialog(null, e.getMessage(), "提示", JOptionPane.PLAIN_MESSAGE);
 		}
 	}
@@ -294,14 +301,18 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 	@ActionHandle("自动换行")
 	public void autoBr(Object eventSource) {
 		if(eventSource instanceof JMenuItem) {
-			txaDisplay.setLineWrap(((JMenuItem)eventSource).isSelected());
+			boolean lineWrap = ((JMenuItem)eventSource).isSelected();
+			txaDisplay.setLineWrap(lineWrap);
+			configuration.setLineWrap(lineWrap);
 		}
 	}
 	
 	@ActionHandle("断行不断字")
 	public void autoBrNotInWorld(Object eventSource) {
 		if(eventSource instanceof JMenuItem) {
-			txaDisplay.setWrapStyleWord(((JMenuItem)eventSource).isSelected());
+			boolean wrapStyleWord = ((JMenuItem)eventSource).isSelected();
+			txaDisplay.setWrapStyleWord(wrapStyleWord);
+			configuration.setWrapStyleWord(wrapStyleWord);
 		}
 	}
 
@@ -321,13 +332,18 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 
 	@ActionHandle("显示行号")
 	public void showLineNumber(Object eventSource) {
-
+		if(eventSource instanceof JMenuItem) {
+			boolean showLineNumber = ((JMenuItem)eventSource).isSelected();
+			configuration.setShowLineNumber(showLineNumber);
+		}
 	}
 
 	@ActionHandle("显示状态栏")
 	public void showStateBar(Object eventSource) {
 		if(eventSource instanceof JMenuItem) {
-			statusBarLabels[0].getParent().setVisible(((JMenuItem)eventSource).isSelected());
+			boolean showStateBar = ((JMenuItem)eventSource).isSelected();
+			statusBarLabels[0].getParent().setVisible(showStateBar);
+			configuration.setShowStateBar(showStateBar);
 		}
 	}
 
@@ -337,7 +353,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 		dialog.setStartConversionListener(new TextConversionDialog.StartConversionListener() {
 			
 			@Override
-			public void onStart(Class converter, String inPath, String outPath) {
+			public void onStart(Class<?> converter, String inPath, String outPath) {
 				model.setConversionStateChangeListener(new ConversionStateChangeListener() {
 					
 					@Override
@@ -358,14 +374,16 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 
 					@Override
 					public void onError(Throwable e) {
-						showExceptionMsgDialog(Main.this, "转化发生异常", e.getMessage(), "提示");
+						LogUtil.exception(e);
+						showExceptionMsgDialog(Main.this, "转化异常", e.getMessage(), "提示");
 					}
 				});
 				
 				try {
 					model.start(converter, inPath, outPath, Main.this);
 				} catch (Exception e) {
-					showExceptionMsgDialog(Main.this, "转化发生异常", e.getMessage(), "提示");
+					LogUtil.exception(e);
+					showExceptionMsgDialog(Main.this, "转化异常", e.getMessage(), "提示");
 				}
 				
 			}
@@ -410,7 +428,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
             
             updateStateInfo(row, column, caretPos, rows, length, null);
 		} catch (BadLocationException e1) {
-			e1.printStackTrace();
+			LogUtil.exception(e1);
 		}
 	}
 	
@@ -457,10 +475,10 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 				@Override
 				public void onDeon(List<String> docLines) {
 					txaDisplay.setEditable(true);
-					lastLength = txaDisplay.getText().length();
 				}
 			});
 		} catch (Exception e) {
+			LogUtil.exception(e);
 			showExceptionMsgDialog(this, "", e.getMessage(), "提示");
 		}
 	}

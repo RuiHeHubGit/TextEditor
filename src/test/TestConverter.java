@@ -51,7 +51,7 @@ public class TestConverter implements ActionListener{
 	/**
 	 * 执行转化
 	 */
-	public boolean conversion(File file, String code) {
+	public boolean conversion(File file, File saveDir, String code) {
 		System.out.println("开始转化："+file.getAbsolutePath()+"， "+code);
 		return true;
 	}

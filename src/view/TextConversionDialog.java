@@ -8,9 +8,6 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.Vector;
 
 import javax.swing.BorderFactory;
@@ -31,17 +28,22 @@ import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileFilter;
 
 import annotation.ActionHandle;
+import model.Configuration;
 import model.Model;
 import util.ActionUtil;
 import util.CompilerUtil;
 
 public class TextConversionDialog extends JDialog implements ActionListener{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private static HashMap<String, Class<?>> converterMap;
 	private static Vector<String> converterNameVector;
-	
 	private Main parent;
 	private HashMap<String, Method> actionHandleMap;
 	private ListModel<String> converterListModel;
+	private JList<String> converterList;
 	private JTextField currentConverterName;
 	private JTextField inPathEdit;
 	private JTextField outPathEdit;
@@ -84,7 +86,7 @@ public class TextConversionDialog extends JDialog implements ActionListener{
 		JLabel listTitle = new JLabel("转化器列表");
 		add(listTitle, BorderLayout.NORTH);
 		
-		JList<String> converterList = new JList<String>();
+		converterList = new JList<String>();
 		add(converterList, BorderLayout.CENTER);
 		
 		if(converterMap == null) {
@@ -217,7 +219,7 @@ public class TextConversionDialog extends JDialog implements ActionListener{
 	
 	@ActionHandle("添转化器")
 	public void addConverter() {
-		JFileChooser jfc=new JFileChooser();
+		JFileChooser jfc=new JFileChooser(Configuration.getConfiguration().getFileChooserPath());
 		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		jfc.setFileFilter(new FileFilter() {
 			
@@ -237,13 +239,14 @@ public class TextConversionDialog extends JDialog implements ActionListener{
 		
 		if(jfc.showDialog(new JLabel(), "打开") == JFileChooser.APPROVE_OPTION) {
 			File file=jfc.getSelectedFile();
-			
+			Configuration.getConfiguration().setFileChooserPath(file.getPath());
 			//编译插件
 			try {
 				Class<?> clazz = CompilerUtil.CompilerAndLoader(file);
 				Model.getConverterData(clazz);
 				if(converterMap.put(clazz.getTypeName(), clazz) == null) {
 					converterNameVector.add(clazz.getTypeName());
+					converterList.setModel(converterListModel);
 				}
 				
 				if(converterNameVector.size() == 1) {
@@ -259,7 +262,7 @@ public class TextConversionDialog extends JDialog implements ActionListener{
 	
 	@ActionHandle("选择输入")
 	public void setInPath() {
-		JFileChooser jfc=new JFileChooser();
+		JFileChooser jfc=new JFileChooser("./");
 		jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		if(jfc.showDialog(new JLabel(), "选择") == JFileChooser.APPROVE_OPTION) {
 			File file=jfc.getSelectedFile();
@@ -270,7 +273,7 @@ public class TextConversionDialog extends JDialog implements ActionListener{
 	
 	@ActionHandle("选择输出")
 	public void setOutPath() {
-		JFileChooser jfc=new JFileChooser();
+		JFileChooser jfc=new JFileChooser("./");
 		jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		if(jfc.showDialog(new JLabel(), "选择") == JFileChooser.APPROVE_OPTION) {
 			File file=jfc.getSelectedFile();

@@ -51,7 +51,7 @@ public class QuitConfimDialog extends JDialog implements ActionListener{
 
 	private void initView() { 
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-		setSize((int) (dim.getWidth() * 0.2), (int) (dim.getHeight() * 0.2));
+		setSize((int) (dim.getWidth() * 0.2), (int) (dim.getHeight() * 0.16));
 		setResizable(false);
 		
 		JButton save = new JButton("保存");
@@ -76,7 +76,7 @@ public class QuitConfimDialog extends JDialog implements ActionListener{
 		int btnAllW = Spring.width(save).getValue()
 				+ Spring.width(notSave).getValue()
 				+ Spring.width(cancle).getValue();
-		int svp = (int) ((getWidth()-12-btnAllW) / 4.0f);
+		int svp = (int) ((getWidth()-8-btnAllW) / 4.0f);
 		springLayout.putConstraint(SpringLayout.WEST, save, svp, SpringLayout.WEST, btnGroup);
 		springLayout.putConstraint(SpringLayout.WEST, notSave, svp, SpringLayout.EAST, save);
 		springLayout.putConstraint(SpringLayout.WEST, cancle, svp, SpringLayout.EAST, notSave);

@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
-import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -14,12 +13,16 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 public class UseDirectionDialog extends JDialog {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	public UseDirectionDialog(Frame parent) {
 		super(parent, "文本转化说明指导", true);
 		setLocationRelativeTo(null);
@@ -52,22 +55,20 @@ public class UseDirectionDialog extends JDialog {
 		contentPanel.add(Box.createVerticalStrut(15));
 		contentPanel.add(new JLabel("二、使用的转化器要求，实现下面三个方法可被调用"));
 		contentPanel.add(Box.createVerticalStrut(10));
-		contentPanel.add(new JLabel("1、启动视图，设为模态窗口可用于处理前做一些设置设置或取消转化，此方法可以不实现"));
+		contentPanel.add(new JLabel("1、启动视图，设为模态窗口可用于处理前做一些设置或取消转化，此方法可以不实现"));
 		contentPanel.add(new JLabel("public boolean showView(JFrame parent);"));
 		contentPanel.add(Box.createVerticalStrut(10));
-		contentPanel.add(new JLabel("2、文件扫描过滤器,返回fals代表文件忽略当前文件，此方法可以不实现"));
+		contentPanel.add(new JLabel("2、文件扫描过滤器,返回false代表文件忽略当前文件，此方法可以不实现"));
 		contentPanel.add(new JLabel("public boolean filefilter(File file);"));
 		contentPanel.add(Box.createVerticalStrut(10));
-		contentPanel.add(new JLabel("3、转化器，必须含有此方法才是能支持的转化器"));
-		contentPanel.add(new JLabel("public boolean conversion(File file, String code);"));
+		contentPanel.add(new JLabel("3、转化器，有效的转化器必须含有此方法"));
+		contentPanel.add(new JLabel("public boolean conversion(File inFile, File saveDir, String code);"));
 		contentPanel.add(Box.createVerticalStrut(10));
 		
 		JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 		mainPanel.add(btnPanel, BorderLayout.SOUTH);
 		JButton closeBtn = new JButton("关闭");
 		btnPanel.add(closeBtn);
-		closeBtn.setMargin(new Insets(5, 5, 5, 5));
-		closeBtn.setSize(200, 50);
 		closeBtn.addActionListener(new ActionListener() {
 			
 			@Override

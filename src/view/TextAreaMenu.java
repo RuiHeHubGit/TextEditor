@@ -13,9 +13,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
-import javax.swing.event.CaretEvent;
-import javax.swing.event.CaretListener;
-import javax.swing.text.BadLocationException;
 
 /**
  * 带有功能菜单的JTextArea

@@ -19,7 +19,6 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JColorChooser;
 import javax.swing.JDialog;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -31,6 +30,10 @@ import javax.swing.WindowConstants;
 import javax.swing.border.BevelBorder;
 
 public class FontFormat extends JDialog {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private JLabel nameLb;
 	private JLabel styleLb;
 	private JLabel sizeLb;
@@ -39,9 +42,9 @@ public class FontFormat extends JDialog {
 	private JTextField styleTx;
 	private JTextField sizeTx;
 	private JTextField presTx;
-	private JList nameLt;
-	private JList styleLt;
-	private JList sizeLt;
+	private JList<String> nameLt;
+	private JList<String> styleLt;
+	private JList<String> sizeLt;
 	private JScrollPane jScrollPane1;
 	private JScrollPane jScrollPane2;
 	private JScrollPane jScrollPane3;
@@ -60,7 +63,6 @@ public class FontFormat extends JDialog {
 	private BiFunction<Font, Color, Boolean> onChange;
 	
 
-	private JFileChooser fileChoose = new JFileChooser();// 文件选择类实例
 	private JDialog colorDlg;// 颜色对话框
 	private JColorChooser colorChoose = new JColorChooser();// 颜色选择类实例
 
@@ -81,7 +83,7 @@ public class FontFormat extends JDialog {
 		setLocationRelativeTo(parent);
 		this.onChange = biFunction;
 		frame = new JFrame();
-		this.curFont = font;
+		curFont = font;
 		initGUI();
 	}
 
@@ -114,7 +116,6 @@ public class FontFormat extends JDialog {
 			styleLt.setSelectedIndex(0);
 			sizeLt.setSelectedValue("12", true);
 			font = new Font(fontNameSet[0], fontCon[0], 12);
-			curFont = font;// 保存原来的字体格式
 			curFont = font;// 保存原来的字体格式
 			presTx.setFont(font);
 			// JOptionPane.showMessageDialog(null, "ccac");
@@ -188,8 +189,8 @@ public class FontFormat extends JDialog {
 		getContentPane().add(jScrollPane1);
 		jScrollPane1.setBounds(10, 74, 120, 210);
 		{
-			ListModel fontNameModel = new DefaultComboBoxModel(fontNameSet);
-			nameLt = new JList();
+			ListModel<String> fontNameModel = new DefaultComboBoxModel<String>(fontNameSet);
+			nameLt = new JList<String>();
 			jScrollPane1.setViewportView(nameLt);
 			nameLt.setModel(fontNameModel);
 			nameLt.setBounds(274, 193, 90, 86);
@@ -205,8 +206,8 @@ public class FontFormat extends JDialog {
 		getContentPane().add(jScrollPane2);
 		jScrollPane2.setBounds(151, 74, 100, 103);
 		{
-			ListModel fontStyleModel = new DefaultComboBoxModel(fontStyleSet);
-			styleLt = new JList();
+			ListModel<String> fontStyleModel = new DefaultComboBoxModel<String>(fontStyleSet);
+			styleLt = new JList<String>();
 			jScrollPane2.setViewportView(styleLt);
 			styleLt.setModel(fontStyleModel);
 			styleLt.setBounds(310, 215, 70, 102);
@@ -222,8 +223,8 @@ public class FontFormat extends JDialog {
 		getContentPane().add(jScrollPane3);
 		jScrollPane3.setBounds(275, 75, 79, 100);
 		{
-			ListModel fontSizeModel = new DefaultComboBoxModel(fontSizeSet);
-			sizeLt = new JList();
+			ListModel<String> fontSizeModel = new DefaultComboBoxModel<String>(fontSizeSet);
+			sizeLt = new JList<String>();
 			jScrollPane3.setViewportView(sizeLt);
 			sizeLt.setModel(fontSizeModel);
 			sizeLt.setBounds(300, 218, 54, 102);
@@ -340,8 +341,8 @@ public class FontFormat extends JDialog {
 				color = curColor;
 			}
 			if(onChange.apply(font , color)) {
-				FontFormat.this.curFont = font;// 更新原来保存格式
-				FontFormat.this.curColor = color;// 更新颜色
+				FontFormat.curFont = font;// 更新原来保存格式
+				FontFormat.curColor = color;// 更新颜色
 			}
 		}
 		this.dispose();

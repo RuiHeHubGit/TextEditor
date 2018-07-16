@@ -136,9 +136,10 @@ public class Model {
 					&& (m.getReturnType() == boolean.class || m.getReturnType() == Boolean.class)) {
 				convertorData.setFilefilter(m);
 			} else if(m.getName().equals("conversion")
-					&& parameterTypes.length == 2
+					&& parameterTypes.length == 3
 					&& parameterTypes[0] == File.class
-					&& parameterTypes[1] == String.class
+					&& parameterTypes[1] == File.class
+					&& parameterTypes[2] == String.class
 					&& (m.getReturnType() == boolean.class || m.getReturnType() == Boolean.class)) {
 				convertorData.setConversion(m);
 			}
@@ -179,7 +180,7 @@ public class Model {
 		for (int i = 0; i < fileList.size(); i++) {
 			try {
 				if((boolean) convertorData.getConversion().invoke(convertorData.getConverter(),
-						fileList.get(i),
+						fileList.get(i), saveDir,
 						getFileCharset(fileList.get(i).getAbsolutePath()))) {
 					++successCount;
 					if(conversionStateChangeListener != null) {
