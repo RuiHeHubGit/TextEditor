@@ -203,19 +203,19 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 	}
 
 	@ActionHandle("保存")
-	public void saveDoc() {
+	public boolean saveDoc() {
 		String savePath = model.getDocSavePath();
 		if(savePath == null || savePath.isEmpty()) {
 			JFileChooser jfc=new JFileChooser();
 			jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 			if(jfc.showDialog(new JLabel(), "保存") != JFileChooser.APPROVE_OPTION)
 			{
-				return;
+				return false;
 			}
 			File saveFile = jfc.getSelectedFile();
 			if(Model.fileIsExists(saveFile) && JOptionPane.showConfirmDialog(this,
 					"文件已经存在是否覆盖？", "提示", JOptionPane.YES_NO_OPTION) != JOptionPane.OK_OPTION) {
-				return;
+				return false;
 			}
 			savePath = saveFile.getAbsolutePath();
 			model.setDocSavePath(savePath);
@@ -229,7 +229,9 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 		} catch (Exception e) {
 			e.printStackTrace();
 			showExceptionMsgDialog(Main.this, "保存失败", e.getMessage(), "提示");
+			return false;
 		}
+		return true;
 	}
 	
 	@ActionHandle("另存")
@@ -261,7 +263,7 @@ public class Main extends JFrame implements ActionListener, CaretListener{
 				@Override
 				public void onDnoe(int code) {
 					if(code == 1) {
-						saveDoc();
+						if(!saveDoc())return;
 					} else if(code == 3){
 						return;
 					}
